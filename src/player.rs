@@ -41,7 +41,12 @@ impl Player {
     /// additional blocks trailing behind (to the left of ) its head.  Player 1 should
     /// be colored blue (pick a nice shade of blue)
     pub fn player_1() -> Player {
-        todo!()
+        Player {
+            moving_direction: Direction::Down,
+            has_moved_in_direction: false,
+            trail: LinkedList::new(),
+            color: piston_window::color::hex("ff0000"),
+        }
     }
 
     /// Returns a Player object representing Player 2 at the start of the game.  Player 2
