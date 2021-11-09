@@ -65,18 +65,26 @@ impl Game {
 mod tests {
     use super::*;
 
+    #[test]
+    #[ignore]
     fn test_new() {
         todo!()
     }
 
+    #[test]
+    #[ignore]
     fn test_update() {
         todo!()
     }
 
+    #[test]
+    #[ignore]
     fn test_key_pressed() {
         todo!()
     }
 
+    #[test]
+    #[ignore]
     fn test_restart() {
         todo!()
     }

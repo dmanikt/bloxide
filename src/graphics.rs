@@ -14,7 +14,7 @@ pub const POINTS_PER_BLOCK: f64 = 25.0;
 /// on the game board.  The top left corner is (0, 0), x-values increase to
 /// the right all the way to the width - 1, and y-values increase going down
 /// all the way to the height - 1.
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Block {
     pub x: u32,
     pub y: u32,

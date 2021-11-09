@@ -4,7 +4,7 @@ use piston_window::{Context, G2d};
 use std::collections::LinkedList;
 
 /// A simple enumerated type representing the four directions a player can move.
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Direction {
     Up,
     Down,
@@ -36,20 +36,50 @@ pub struct Player {
 
 impl Player {
     /// Returns a Player object representing Player 1 at the start of the game.  Player 1
-    /// should begin with its head at location (4,4) (i.e., 4 units right and down from the
+    /// should begin with its head at location (4,3) (i.e., 5 units right and 4 down from the
     /// top-left corner).  It should be oriented (initially moving) to the right, with 2
-    /// additional blocks trailing behind (to the left of ) its head.  Player 1 should
-    /// be colored blue (pick a nice shade of blue)
+    /// additional blocks trailing behind (to the left of) its head.  Player 1 should
+    /// be colored red
     pub fn player_1() -> Player {
-        todo!()
+        let mut trail = LinkedList::new();
+        // The trail begins as 3 horizontal Blocks with the "head" 5 blocks from the
+        // left wall and 4 blocks below the top.  The other two blocks are directly
+        // to the left of the head.
+        for x in 2..=4 {
+            trail.push_front(Block {
+                x,
+                y: 3,
+            });
+        }
+        Player {
+            moving_direction: Direction::Right,
+            has_moved_in_direction: false,
+            trail,
+            color: piston_window::color::hex("ff0000"), // red
+        }
     }
 
     /// Returns a Player object representing Player 2 at the start of the game.  Player 2
-    /// should begin with its head positioned 4 units left and up from the bottom-right corner.
+    /// should begin with its head positioned 4 units left and 5 up from the bottom-right corner.
     /// It should be oriented (initially moving) upward, with 2 additional blocks trailing
-    /// below (to the left of ) its head.  Player 2 should be colored red (pick a nice shade of red)
-    pub fn player_2() -> Player {
-        todo!()
+    /// behind (below) its head.  Player 2 should be colored blue
+    pub fn player_2(game_width: u32, game_height: u32) -> Player {
+        let mut trail = LinkedList::new();
+        // The trail begins as 3 vertical Blocks with the "head" 5 Blocks up from the
+        // bottom and 4 Blocks from the right wall.  The other two blocks are directly
+        // below the head.
+        for y in (game_height - 5)..=(game_height - 3) {
+            trail.push_back(Block {
+                x: game_width - 4,
+                y,
+            });
+        }
+        Player {
+            moving_direction: Direction::Up,
+            has_moved_in_direction: false,
+            trail,
+            color: piston_window::color::hex("0000ff"), // blue
+        }
     }
 
     /// Draws the player given a graphics Context and G2d.  A player is drawn by drawing all
@@ -96,30 +126,60 @@ impl Player {
 mod tests {
     use super::*;
 
-    fn test_opposite_direction() { todo!() }
-
-    fn test_player_1() { todo!() }
-
-    fn test_player_2() {
-        todo!()
+    #[test]
+    fn test_opposite_direction() {
+        assert_eq!(Direction::Up, Direction::Down.opposite_direction());
+        assert_eq!(Direction::Down, Direction::Up.opposite_direction());
+        assert_eq!(Direction::Left, Direction::Right.opposite_direction());
+        assert_eq!(Direction::Right, Direction::Left.opposite_direction());
     }
 
+    #[test]
+    fn test_player_1() {
+        let player_1 = Player::player_1();
+        assert_eq!(false, player_1.has_moved_in_direction);
+        assert_eq!(Direction::Right, player_1.moving_direction);
+        assert_eq!(3, player_1.trail.len());
+        assert_eq!(&Block { x: 4, y: 3 }, player_1.trail.front().unwrap());
+    }
+
+    #[test]
+    fn test_player_2() {
+        let game_width = 35_u32;
+        let game_height = 25_u32;
+        let player_2 = Player::player_2(game_width, game_height);
+        assert_eq!(false, player_2.has_moved_in_direction);
+        assert_eq!(Direction::Up, player_2.moving_direction);
+        assert_eq!(3, player_2.trail.len());
+        assert_eq!(&Block { x: 31, y: 20 }, player_2.trail.front().unwrap());
+    }
+
+    #[test]
+    #[ignore]
     fn test_move_forward() {
         todo!()
     }
 
+    #[test]
+    #[ignore]
     fn test_next_head_position() {
         todo!()
     }
 
+    #[test]
+    #[ignore]
     fn test_update_direction() {
         todo!()
     }
 
+    #[test]
+    #[ignore]
     fn test_trail_covers_location() {
         todo!()
     }
 
+    #[test]
+    #[ignore]
     fn test_imminent_self_collision() {
         todo!()
     }
