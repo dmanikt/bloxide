@@ -1,7 +1,7 @@
 use crate::player;
 use piston_window::{Context, G2d, Key};
 use crate::player::{Player, Direction};
-use crate::graphics::draw_rectangle;
+use crate::graphics::{draw_rectangle, Block};
 
 /// Determines the time step length in between advancements of each player.
 pub const PLAYER_SPEED: f64 = 0.1;
@@ -21,6 +21,8 @@ pub struct Game {
     player_one: player::Player,
     player_two: player::Player,
 
+    winner: Option<bool>, // Some(true) for player 1, Some(false) for player 2, None if game isn't over.
+
     is_game_over: bool,
     time_waited: f64, // Used when moving players forward
 }
@@ -32,8 +34,12 @@ impl Game {
         Game {
             width,
             height,
+
             player_one: Player::player_1(),
             player_two: Player::player_2(width, height),
+
+            winner: None,
+
             is_game_over: false,
             time_waited: 0.0,
         }
@@ -50,6 +56,10 @@ impl Game {
         draw_rectangle([0., 0., 0., 1.0], 0, 0, 1, self.height, con, g);
         draw_rectangle([0., 0., 0., 1.0], 0, self.height - 1, self.width, 1, con, g);
         draw_rectangle([0., 0., 0., 1.0], self.width - 1, 0, 1, self.height, con, g);
+
+        if self.is_game_over {
+            draw_rectangle([1., 0., 0., 0.3], 0, 0, self.width, self.height, con, g);
+        }
     }
 
     /// Given an amount of time elapsed (this will be provided by the game window itself),
@@ -60,10 +70,25 @@ impl Game {
     pub fn update(&mut self, time_elapsed: f64) {
         self.time_waited += time_elapsed;
 
-        if self.time_waited > PLAYER_SPEED {
-            self.player_one.move_forward();
-            self.player_two.move_forward();
-            self.time_waited -= PLAYER_SPEED;
+        if !self.is_game_over && self.time_waited > PLAYER_SPEED {
+            if self.is_out_of_bounds(self.player_one.next_head_position()) ||
+                self.player_one.imminent_self_collision() ||
+                self.player_two.trail_covers_location(self.player_one.next_head_position()){
+                self.is_game_over = true;
+                self.winner = Some(false);
+            } else if self.is_out_of_bounds(self.player_two.next_head_position()) ||
+                self.player_two.imminent_self_collision() ||
+                self.player_one.trail_covers_location(self.player_two.next_head_position()){
+                self.is_game_over = true;
+                self.winner = Some(true);
+            } else if self.player_one.next_head_position() == self.player_two.next_head_position() {
+                self.is_game_over = true;
+                self.winner = Some(rand::random());
+            } else {
+                self.player_one.move_forward();
+                self.player_two.move_forward();
+                self.time_waited -= PLAYER_SPEED;
+            }
         }
     }
 
@@ -113,8 +138,16 @@ impl Game {
         self.player_one = Player::player_1();
         self.player_two = Player::player_2(self.width, self.height);
 
+        self.winner = None;
+
         self.is_game_over = false;
         self.time_waited = 0.0;
+    }
+
+    /// Checks if the given Block (i.e., a location) is out of the bounds of the gameboard.
+    /// This will be used when determining if a snake has run out of bounds (i.e., died)
+    fn is_out_of_bounds(&self, block: Block) -> bool {
+        block.x <= 0 || block.x >= (self.width - 1) || block.y <= 0 || block.y >= (self.height - 1)
     }
 }
 
@@ -154,5 +187,14 @@ mod tests {
 
         assert_eq!(Block { x : 5, y : 4 }, game.player_one.next_head_position());
         assert_eq!(Block { x : 30, y: 19 }, game.player_two.next_head_position())
+    }
+
+    #[test]
+    fn test_is_out_of_bounds() {
+        let game = Game::new(35, 25);
+        assert!(game.is_out_of_bounds(Block { x: 0, y: 0 }));
+        assert!(game.is_out_of_bounds(Block { x: 15, y: 24 }));
+        assert!(!game.is_out_of_bounds(Block { x: 15, y: 15 }));
+        assert!(!game.is_out_of_bounds(Block { x: 1, y: 1 }));
     }
 }
