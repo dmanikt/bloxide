@@ -5,6 +5,7 @@ mod graphics;
 mod player;
 
 use piston_window::*;
+use crate::game::Game;
 
 fn main() {
     // The dimensions of the game board, in "block" units.
@@ -23,10 +24,23 @@ fn main() {
     .build()
     .unwrap();
 
+    let mut game = Game::new(width, height);
+
     // main animation loop (will be updated later when more is implemented)
     while let Some(event) = window.next() {
-        window.draw_2d(&event, |_c, g, _dev| {
+        if let Some(Button::Keyboard(key)) = event.press_args() {
+            // handle key events
+            game.key_pressed(key);
+        }
+
+        window.draw_2d(&event, |c, g, _dev| {
             clear(graphics::BACK_COLOR, g);
+            game.draw(&c, g);
+        });
+
+        event.update(|arg| {
+            // update game backend
+            game.update(arg.dt);
         });
     }
 }

@@ -84,41 +84,57 @@ impl Player {
 
     /// Draws the player given a graphics Context and G2d.  A player is drawn by drawing all
     /// of the blocks in its trail.  Note that the type Block has a draw() function, which can
-    /// be used here when iterating over the player's trail.  Color the head block slightly,
-    /// but noticeably, brighter than the rest of the trail.
+    /// be used here when iterating over the player's trail.
     pub fn draw(&self, con: &Context, g: &mut G2d) {
-        todo!()
+        for block in &self.trail {
+            block.draw(self.color, con, g);
+        }
     }
 
     /// Moves a player forward by one block.  This should simply extend their trail in their
     /// moving direction.
     pub fn move_forward(&mut self) {
-        todo!()
+        self.has_moved_in_direction = true;
+        self.trail.push_front(self.next_head_position());
     }
 
     /// Based on the current "head" position of the player and its current moving direction,
     /// returns the position that the head would be in if this player moved forward by one block.
     pub fn next_head_position(&self) -> Block {
-        todo!()
+        let &Block { x: head_x, y: head_y } = self.trail.front().unwrap();
+        match self.moving_direction {
+            Direction::Up => Block { x: head_x, y: head_y - 1 },
+            Direction::Down => Block { x: head_x, y: head_y + 1 },
+            Direction::Left => Block { x: head_x - 1, y: head_y },
+            Direction::Right => Block { x: head_x + 1, y: head_y },
+        }
     }
 
     /// Updates the player's moving direction to the parameter, unless the parameter is None or it
-    /// is the same as the current direction or the opposite of the current direction.  (e.g., if
-    /// a player is currently moving Right, then this method will only update the player's direction
-    /// if `Some(Direction::Up)` or `Some(Direction::Down)` are passed to the method.
+    /// is the same as the current direction or the opposite of the current direction, or the player
+    /// has not yet moved in that direction.  (e.g., if a player is currently moving Right, then
+    /// this method will only update the player's direction if `Some(Direction::Up)` or
+    /// `Some(Direction::Down)` are passed to the method.)
     pub fn update_direction(&mut self, dir: Option<Direction>) {
-        todo!()
+        if self.has_moved_in_direction {
+            if let Some(direction) = dir {
+                if direction != self.moving_direction && direction != self.moving_direction.opposite_direction() {
+                    self.moving_direction = direction;
+                    self.has_moved_in_direction = false;
+                }
+            }
+        }
     }
 
     /// Checks if the specified location is covered by the player's trail.
     pub fn trail_covers_location(&self, location: Block) -> bool {
-        todo!()
+        self.trail.contains(&location)
     }
 
     /// Checks if the player would run into its own trail if it were to move forward
     /// by one block in its current moving direction.
     pub fn imminent_self_collision(&self) -> bool {
-        todo!()
+        self.trail_covers_location(self.next_head_position())
     }
 }
 
@@ -155,32 +171,53 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_move_forward() {
-        todo!()
+        let mut player_1 = Player::player_1();
+        player_1.move_forward();
+
+        assert_eq!(4, player_1.trail.len());
+        assert!(player_1.trail_covers_location(Block { x: 5, y: 3 }));
     }
 
     #[test]
-    #[ignore]
     fn test_next_head_position() {
-        todo!()
+        let player_2 = Player::player_2(30, 30);
+        assert_eq!(Block { x: 26, y: 24 }, player_2.next_head_position());
     }
 
     #[test]
-    #[ignore]
     fn test_update_direction() {
-        todo!()
+        let mut player_1 = Player::player_1();
+        player_1.move_forward();
+
+        player_1.update_direction(Some(Direction::Up));
+        assert_eq!(Direction::Up, player_1.moving_direction);
+
+        player_1.update_direction(None);
+        assert_eq!(Direction::Up, player_1.moving_direction);
+
+        player_1.update_direction(Some(Direction::Down));
+        assert_eq!(Direction::Up, player_1.moving_direction);
     }
 
     #[test]
-    #[ignore]
     fn test_trail_covers_location() {
-        todo!()
+        let player_1 = Player::player_1();
+
+        assert!(player_1.trail_covers_location(Block { x: 2, y: 3 }));
+        assert!(!player_1.trail_covers_location(Block {x: 10, y: 4}));
     }
 
     #[test]
-    #[ignore]
     fn test_imminent_self_collision() {
-        todo!()
+        let mut player_1 = Player::player_1();
+
+        player_1.move_forward();
+        player_1.update_direction(Some(Direction::Down));
+        player_1.move_forward();
+        player_1.update_direction(Some(Direction::Left));
+        player_1.move_forward();
+        player_1.update_direction(Some(Direction::Up));
+        assert!(player_1.imminent_self_collision());
     }
 }
