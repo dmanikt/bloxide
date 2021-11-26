@@ -1,3 +1,4 @@
+use crate::game::PLAYER_SPEED;
 use crate::graphics::Block;
 use piston_window::types::Color;
 use piston_window::{Context, G2d};
@@ -32,6 +33,8 @@ pub struct Player {
                                  since switching to it */
     trail: LinkedList<Block>, /* head of LL is the front of the player's trail */
     color: Color,
+
+    time_waited: f64, /* time since the player last moved */
 }
 
 impl Player {
@@ -39,30 +42,29 @@ impl Player {
     /// should begin with its head at location (4,3) (i.e., 5 units right and 4 down from the
     /// top-left corner).  It should be oriented (initially moving) to the right, with 2
     /// additional blocks trailing behind (to the left of) its head.  Player 1 should
-    /// be colored red
+    /// be colored red.  Player 1 will have an initial time_waited value of 0.0
     pub fn player_1() -> Player {
         let mut trail = LinkedList::new();
         // The trail begins as 3 horizontal Blocks with the "head" 5 blocks from the
         // left wall and 4 blocks below the top.  The other two blocks are directly
         // to the left of the head.
         for x in 2..=4 {
-            trail.push_front(Block {
-                x,
-                y: 3,
-            });
+            trail.push_front(Block { x, y: 3 });
         }
         Player {
             moving_direction: Direction::Right,
             has_moved_in_direction: false,
             trail,
             color: piston_window::color::hex("ff0000"), // red
+            time_waited: 0.0,
         }
     }
 
     /// Returns a Player object representing Player 2 at the start of the game.  Player 2
     /// should begin with its head positioned 4 units left and 5 up from the bottom-right corner.
     /// It should be oriented (initially moving) upward, with 2 additional blocks trailing
-    /// behind (below) its head.  Player 2 should be colored blue
+    /// behind (below) its head.  Player 2 should be colored blue.  Player 2 should have an
+    /// initial time_waited value of half of PLAYER_SPEED as defined in the game file.
     pub fn player_2(game_width: u32, game_height: u32) -> Player {
         let mut trail = LinkedList::new();
         // The trail begins as 3 vertical Blocks with the "head" 5 Blocks up from the
@@ -79,7 +81,16 @@ impl Player {
             has_moved_in_direction: false,
             trail,
             color: piston_window::color::hex("0000ff"), // blue
+            time_waited: PLAYER_SPEED / 2.0,
         }
+    }
+
+    pub fn wait_time(&mut self, time: f64) {
+        self.time_waited += time;
+    }
+
+    pub fn time_waited(&self) -> f64 {
+        self.time_waited
     }
 
     /// Draws the player given a graphics Context and G2d.  A player is drawn by drawing all
@@ -101,12 +112,27 @@ impl Player {
     /// Based on the current "head" position of the player and its current moving direction,
     /// returns the position that the head would be in if this player moved forward by one block.
     pub fn next_head_position(&self) -> Block {
-        let &Block { x: head_x, y: head_y } = self.trail.front().unwrap();
+        let &Block {
+            x: head_x,
+            y: head_y,
+        } = self.trail.front().unwrap();
         match self.moving_direction {
-            Direction::Up => Block { x: head_x, y: head_y - 1 },
-            Direction::Down => Block { x: head_x, y: head_y + 1 },
-            Direction::Left => Block { x: head_x - 1, y: head_y },
-            Direction::Right => Block { x: head_x + 1, y: head_y },
+            Direction::Up => Block {
+                x: head_x,
+                y: head_y - 1,
+            },
+            Direction::Down => Block {
+                x: head_x,
+                y: head_y + 1,
+            },
+            Direction::Left => Block {
+                x: head_x - 1,
+                y: head_y,
+            },
+            Direction::Right => Block {
+                x: head_x + 1,
+                y: head_y,
+            },
         }
     }
 
@@ -118,7 +144,9 @@ impl Player {
     pub fn update_direction(&mut self, dir: Option<Direction>) {
         if self.has_moved_in_direction {
             if let Some(direction) = dir {
-                if direction != self.moving_direction && direction != self.moving_direction.opposite_direction() {
+                if direction != self.moving_direction
+                    && direction != self.moving_direction.opposite_direction()
+                {
                     self.moving_direction = direction;
                     self.has_moved_in_direction = false;
                 }
@@ -157,6 +185,7 @@ mod tests {
         assert_eq!(Direction::Right, player_1.moving_direction);
         assert_eq!(3, player_1.trail.len());
         assert_eq!(&Block { x: 4, y: 3 }, player_1.trail.front().unwrap());
+        assert_eq!(0.0, player_1.time_waited);
     }
 
     #[test]
@@ -168,6 +197,7 @@ mod tests {
         assert_eq!(Direction::Up, player_2.moving_direction);
         assert_eq!(3, player_2.trail.len());
         assert_eq!(&Block { x: 31, y: 20 }, player_2.trail.front().unwrap());
+        assert_eq!(PLAYER_SPEED / 2.0, player_2.time_waited);
     }
 
     #[test]
@@ -205,7 +235,7 @@ mod tests {
         let player_1 = Player::player_1();
 
         assert!(player_1.trail_covers_location(Block { x: 2, y: 3 }));
-        assert!(!player_1.trail_covers_location(Block {x: 10, y: 4}));
+        assert!(!player_1.trail_covers_location(Block { x: 10, y: 4 }));
     }
 
     #[test]
