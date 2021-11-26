@@ -8,12 +8,6 @@ pub const PLAYER_SPEED: f64 = 0.15;
 
 /// A Game struct holds information related to the size of the game board,
 /// the two players, and the status of the game.
-///
-/// Note on time_waited: This variable represents the amount of time waited, in seconds,
-/// since the last time that both players were moved forward by one block.  This will
-/// be incremented by a fixed amount each time the window updates, and then once it
-/// passes a certain threshold, we will march each player forward one block and then
-/// reset time_waited to 0.
 pub struct Game {
     width: u32,  // Measured in "blocks"
     height: u32, // Measured in "blocks"
@@ -55,17 +49,15 @@ impl Game {
         draw_rectangle([0., 0., 0., 1.0], 0, self.height - 1, self.width, 1, con, g);
         draw_rectangle([0., 0., 0., 1.0], self.width - 1, 0, 1, self.height, con, g);
 
-        if self.is_game_over {
-            draw_rectangle([1., 0., 0., 0.3], 0, 0, self.width, self.height, con, g);
-        }
-
         self.winner
     }
 
+    /// Returns the height of the game (in blocks)
     pub fn get_width(&self) -> u32 {
         self.width
     }
 
+    /// Returns the width of the game (in blocks)
     pub fn get_height(&self) -> u32 {
         self.height
     }

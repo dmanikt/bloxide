@@ -161,7 +161,9 @@ impl Player {
     /// is the same as the current direction or the opposite of the current direction, or the player
     /// has not yet moved in that direction.  (e.g., if a player is currently moving Right, then
     /// this method will only update the player's direction if `Some(Direction::Up)` or
-    /// `Some(Direction::Down)` are passed to the method.)
+    /// `Some(Direction::Down)` are passed to the method.)  If the player hasn't moved in their
+    /// current direction yet but the changed direction is still valid, then if the backup direction
+    /// is None it will be set to this direction.
     pub fn update_direction(&mut self, dir: Option<Direction>) {
         if let Some(direction) = dir {
             if direction != self.moving_direction
