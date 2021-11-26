@@ -4,7 +4,7 @@ use crate::player::{Direction, Player};
 use piston_window::{Context, G2d, Key};
 
 /// Determines the time step length in between advancements of each player.
-pub const PLAYER_SPEED: f64 = 0.1;
+pub const PLAYER_SPEED: f64 = 0.15;
 
 /// A Game struct holds information related to the size of the game board,
 /// the two players, and the status of the game.
@@ -45,7 +45,7 @@ impl Game {
 
     /// Draws the game by first drawing both players, and then drawing a black border on the outer
     /// edge of the game window.
-    pub fn draw(&self, con: &Context, g: &mut G2d) {
+    pub fn draw(&self, con: &Context, g: &mut G2d) -> Option<bool> {
         self.player_one.draw(con, g);
         self.player_two.draw(con, g);
 
@@ -58,13 +58,24 @@ impl Game {
         if self.is_game_over {
             draw_rectangle([1., 0., 0., 0.3], 0, 0, self.width, self.height, con, g);
         }
+
+        self.winner
+    }
+
+    pub fn get_width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn get_height(&self) -> u32 {
+        self.height
     }
 
     /// Given an amount of time elapsed (this will be provided by the game window itself),
-    /// updates the game to account for this passed time.  The game's time_waited field
-    /// should be incremented by the amount of time elapsed.  If this causes time_waited to
-    /// meet (or exceed) the constant `PLAYER_SPEED`, then both players should be moved
-    /// forward and time_waited should be reset to `PLAYER_SPEED`.
+    /// updates both of the players to account for this passed time (both of them should have
+    /// their wait_time methods called).  If this causes time_waited to meet or exceed the
+    /// constant `PLAYER_SPEED` for either (or both) players, then the appropriate players should
+    /// be moved forward ONLY after verifying that they are not going to lose if they do so.
+    /// If they will lose, then the game is over and the proper winner should be indicated.
     pub fn update(&mut self, time_elapsed: f64) {
         self.player_one.wait_time(time_elapsed);
         self.player_two.wait_time(time_elapsed);
@@ -81,6 +92,7 @@ impl Game {
                     self.winner = Some(false);
                 } else {
                     self.player_one.move_forward();
+                    self.player_one.advance_direction_queue();
                     self.player_one.wait_time(-PLAYER_SPEED);
                 }
             }
@@ -95,6 +107,7 @@ impl Game {
                     self.winner = Some(true);
                 } else {
                     self.player_two.move_forward();
+                    self.player_two.advance_direction_queue();
                     self.player_two.wait_time(-PLAYER_SPEED);
                 }
             }
@@ -165,7 +178,7 @@ mod tests {
         assert_eq!(0.08, game.player_one.time_waited());
 
         game.update(0.08);
-        assert_eq!(0.06, game.player_one.time_waited());
+        assert_eq!(0.16 - PLAYER_SPEED, game.player_one.time_waited());
     }
 
     #[test]

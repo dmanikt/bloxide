@@ -31,6 +31,8 @@ pub struct Player {
     moving_direction: Direction, /* the direction in which the player is currently moving */
     has_moved_in_direction: bool, /* true if the player has advanced forward in this direction
                                  since switching to it */
+    backup_direction: Option<Direction>, /* used to allow for quick direction changes */
+
     trail: LinkedList<Block>, /* head of LL is the front of the player's trail */
     color: Color,
 
@@ -54,6 +56,7 @@ impl Player {
         Player {
             moving_direction: Direction::Right,
             has_moved_in_direction: false,
+            backup_direction: None,
             trail,
             color: piston_window::color::hex("ff0000"), // red
             time_waited: 0.0,
@@ -79,16 +82,30 @@ impl Player {
         Player {
             moving_direction: Direction::Up,
             has_moved_in_direction: false,
+            backup_direction: None,
             trail,
             color: piston_window::color::hex("0000ff"), // blue
             time_waited: PLAYER_SPEED / 2.0,
         }
     }
 
+    /// If the player has a backup direction enqueued, it will make that the player's
+    /// current moving direction and then reset has_moved_in_direction to false and
+    /// its backup direction to None.
+    pub fn advance_direction_queue(&mut self) {
+        if let Some(dir) = self.backup_direction {
+            self.moving_direction = dir;
+            self.backup_direction = None;
+            self.has_moved_in_direction = false;
+        }
+    }
+
+    /// Increments the player's time_waited value by the parameter.
     pub fn wait_time(&mut self, time: f64) {
         self.time_waited += time;
     }
 
+    /// Returns the time_waited value of the player.
     pub fn time_waited(&self) -> f64 {
         self.time_waited
     }
@@ -107,6 +124,10 @@ impl Player {
     pub fn move_forward(&mut self) {
         self.has_moved_in_direction = true;
         self.trail.push_front(self.next_head_position());
+        if let Some(new_dir) = self.backup_direction {
+            self.moving_direction = new_dir;
+            self.backup_direction = None;
+        }
     }
 
     /// Based on the current "head" position of the player and its current moving direction,
@@ -142,13 +163,14 @@ impl Player {
     /// this method will only update the player's direction if `Some(Direction::Up)` or
     /// `Some(Direction::Down)` are passed to the method.)
     pub fn update_direction(&mut self, dir: Option<Direction>) {
-        if self.has_moved_in_direction {
-            if let Some(direction) = dir {
-                if direction != self.moving_direction
-                    && direction != self.moving_direction.opposite_direction()
-                {
+        if let Some(direction) = dir {
+            if direction != self.moving_direction
+                && direction != self.moving_direction.opposite_direction() {
+                if self.has_moved_in_direction {
                     self.moving_direction = direction;
                     self.has_moved_in_direction = false;
+                } else if self.backup_direction.is_none() {
+                    self.backup_direction = dir;
                 }
             }
         }
