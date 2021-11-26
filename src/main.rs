@@ -40,7 +40,7 @@ fn main() {
     let texture_settings = piston_window::TextureSettings::new();
     let mut glyphs = Glyphs::new(font, texture_context, texture_settings).unwrap();
 
-    // main animation loop (will be updated later when more is implemented)
+    // main animation loop
     while let Some(event) = window.next() {
         if let Some(Button::Keyboard(key)) = event.press_args() {
             // handle key events
@@ -51,6 +51,8 @@ fn main() {
             clear(graphics::BACK_COLOR, g);
             let winner = game.draw(&c, g);
 
+            // if the game is over, call a function that draws the appropriate
+            // game-over message.
             if let Some(player) = winner {
                 game_over_screen(&game, player, &c, g, dev, &mut glyphs)
             }
@@ -63,6 +65,8 @@ fn main() {
     }
 }
 
+/// Draws the game-over screen displaying which player won.  True represents the red player
+/// winning, false represents the blue player winning.
 fn game_over_screen(
     game: &Game,
     winner: bool,
@@ -72,9 +76,9 @@ fn game_over_screen(
     glyphs: &mut GlyphCache<TextureContext<Factory, Resources, CommandBuffer>, Texture<Resources>>,
 ) {
     let main_color = if winner {
-        [1.0, 0., 0., 0.1]
+        [1.0, 0., 0., 0.15]
     } else {
-        [0., 0., 1.0, 0.1]
+        [0., 0., 1.0, 0.15]
     };
     graphics::draw_rectangle(
         main_color,
