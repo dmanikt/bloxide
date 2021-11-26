@@ -165,7 +165,8 @@ impl Player {
     pub fn update_direction(&mut self, dir: Option<Direction>) {
         if let Some(direction) = dir {
             if direction != self.moving_direction
-                && direction != self.moving_direction.opposite_direction() {
+                && direction != self.moving_direction.opposite_direction()
+            {
                 if self.has_moved_in_direction {
                     self.moving_direction = direction;
                     self.has_moved_in_direction = false;

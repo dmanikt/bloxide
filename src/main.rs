@@ -5,9 +5,9 @@ mod graphics;
 mod player;
 
 use crate::game::Game;
-use piston_window::*;
-use gfx_device_gl::{Device, Factory, Resources, CommandBuffer};
+use gfx_device_gl::{CommandBuffer, Device, Factory, Resources};
 use piston_window::glyph_cache::rusttype::GlyphCache;
+use piston_window::*;
 
 fn main() {
     // The dimensions of the game board, in "block" units.
@@ -32,14 +32,13 @@ fn main() {
     let assets = find_folder::Search::ParentsThenKids(3, 2)
         .for_folder("assets")
         .unwrap();
-    let ref font = assets.join("AtariClassic-gry3.ttf");
+    let font = &assets.join("AtariClassic-gry3.ttf");
     let texture_context = piston_window::TextureContext {
         factory: window.factory.clone(),
         encoder: window.factory.create_command_buffer().into(),
     };
     let texture_settings = piston_window::TextureSettings::new();
-    let mut glyphs =
-        Glyphs::new(font, texture_context, texture_settings).unwrap();
+    let mut glyphs = Glyphs::new(font, texture_context, texture_settings).unwrap();
 
     // main animation loop (will be updated later when more is implemented)
     while let Some(event) = window.next() {
@@ -72,7 +71,6 @@ fn game_over_screen(
     dev: &mut Device,
     glyphs: &mut GlyphCache<TextureContext<Factory, Resources, CommandBuffer>, Texture<Resources>>,
 ) {
-
     let main_color = if winner {
         [1.0, 0., 0., 0.1]
     } else {
