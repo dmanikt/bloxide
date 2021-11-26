@@ -1,7 +1,7 @@
-use crate::player;
-use piston_window::{Context, G2d, Key};
-use crate::player::{Player, Direction};
 use crate::graphics::{draw_rectangle, Block};
+use crate::player;
+use crate::player::{Direction, Player};
+use piston_window::{Context, G2d, Key};
 
 /// Determines the time step length in between advancements of each player.
 pub const PLAYER_SPEED: f64 = 0.1;
@@ -24,7 +24,6 @@ pub struct Game {
     winner: Option<bool>, // Some(true) for player 1, Some(false) for player 2, None if game isn't over.
 
     is_game_over: bool,
-    time_waited: f64, // Used when moving players forward
 }
 
 impl Game {
@@ -41,7 +40,6 @@ impl Game {
             winner: None,
 
             is_game_over: false,
-            time_waited: 0.0,
         }
     }
 
@@ -68,26 +66,37 @@ impl Game {
     /// meet (or exceed) the constant `PLAYER_SPEED`, then both players should be moved
     /// forward and time_waited should be reset to `PLAYER_SPEED`.
     pub fn update(&mut self, time_elapsed: f64) {
-        self.time_waited += time_elapsed;
+        self.player_one.wait_time(time_elapsed);
+        self.player_two.wait_time(time_elapsed);
 
-        if !self.is_game_over && self.time_waited > PLAYER_SPEED {
-            if self.is_out_of_bounds(self.player_one.next_head_position()) ||
-                self.player_one.imminent_self_collision() ||
-                self.player_two.trail_covers_location(self.player_one.next_head_position()){
-                self.is_game_over = true;
-                self.winner = Some(false);
-            } else if self.is_out_of_bounds(self.player_two.next_head_position()) ||
-                self.player_two.imminent_self_collision() ||
-                self.player_one.trail_covers_location(self.player_two.next_head_position()){
-                self.is_game_over = true;
-                self.winner = Some(true);
-            } else if self.player_one.next_head_position() == self.player_two.next_head_position() {
-                self.is_game_over = true;
-                self.winner = Some(rand::random());
-            } else {
-                self.player_one.move_forward();
-                self.player_two.move_forward();
-                self.time_waited -= PLAYER_SPEED;
+        if !self.is_game_over {
+            if self.player_one.time_waited() >= PLAYER_SPEED {
+                if self.is_out_of_bounds(self.player_one.next_head_position())
+                    || self.player_one.imminent_self_collision()
+                    || self
+                        .player_two
+                        .trail_covers_location(self.player_one.next_head_position())
+                {
+                    self.is_game_over = true;
+                    self.winner = Some(false);
+                } else {
+                    self.player_one.move_forward();
+                    self.player_one.wait_time(-PLAYER_SPEED);
+                }
+            }
+            if self.player_two.time_waited() >= PLAYER_SPEED {
+                if self.is_out_of_bounds(self.player_two.next_head_position())
+                    || self.player_two.imminent_self_collision()
+                    || self
+                        .player_one
+                        .trail_covers_location(self.player_two.next_head_position())
+                {
+                    self.is_game_over = true;
+                    self.winner = Some(true);
+                } else {
+                    self.player_two.move_forward();
+                    self.player_two.wait_time(-PLAYER_SPEED);
+                }
             }
         }
     }
@@ -99,30 +108,14 @@ impl Game {
     /// if the game is currently over.
     pub fn key_pressed(&mut self, key: Key) {
         match key {
-            Key::W => {
-                self.player_one.update_direction(Some(Direction::Up))
-            }
-            Key::A => {
-                self.player_one.update_direction(Some(Direction::Left))
-            }
-            Key::S => {
-                self.player_one.update_direction(Some(Direction::Down))
-            }
-            Key::D => {
-                self.player_one.update_direction(Some(Direction::Right))
-            }
-            Key::Up => {
-                self.player_two.update_direction(Some(Direction::Up))
-            }
-            Key::Down => {
-                self.player_two.update_direction(Some(Direction::Down))
-            }
-            Key::Left => {
-                self.player_two.update_direction(Some(Direction::Left))
-            }
-            Key::Right => {
-                self.player_two.update_direction(Some(Direction::Right))
-            }
+            Key::W => self.player_one.update_direction(Some(Direction::Up)),
+            Key::A => self.player_one.update_direction(Some(Direction::Left)),
+            Key::S => self.player_one.update_direction(Some(Direction::Down)),
+            Key::D => self.player_one.update_direction(Some(Direction::Right)),
+            Key::Up => self.player_two.update_direction(Some(Direction::Up)),
+            Key::Down => self.player_two.update_direction(Some(Direction::Down)),
+            Key::Left => self.player_two.update_direction(Some(Direction::Left)),
+            Key::Right => self.player_two.update_direction(Some(Direction::Right)),
             Key::Return => {
                 if self.is_game_over {
                     self.restart();
@@ -141,13 +134,12 @@ impl Game {
         self.winner = None;
 
         self.is_game_over = false;
-        self.time_waited = 0.0;
     }
 
     /// Checks if the given Block (i.e., a location) is out of the bounds of the gameboard.
     /// This will be used when determining if a snake has run out of bounds (i.e., died)
     fn is_out_of_bounds(&self, block: Block) -> bool {
-        block.x <= 0 || block.x >= (self.width - 1) || block.y <= 0 || block.y >= (self.height - 1)
+        block.x == 0 || block.x >= (self.width - 1) || block.y == 0 || block.y >= (self.height - 1)
     }
 }
 
@@ -161,20 +153,19 @@ mod tests {
         let game = Game::new(35, 25);
         assert_eq!(35, game.width);
         assert_eq!(25, game.height);
-        assert_eq!(Block {x: 5, y: 3}, game.player_one.next_head_position());
-        assert_eq!(Block {x: 31, y: 19}, game.player_two.next_head_position());
+        assert_eq!(Block { x: 5, y: 3 }, game.player_one.next_head_position());
+        assert_eq!(Block { x: 31, y: 19 }, game.player_two.next_head_position());
         assert_eq!(false, game.is_game_over);
-        assert_eq!(0.0, game.time_waited);
     }
 
     #[test]
     fn test_update() {
         let mut game = Game::new(35, 25);
         game.update(0.08);
-        assert_eq!(0.08, game.time_waited);
+        assert_eq!(0.08, game.player_one.time_waited());
 
         game.update(0.08);
-        assert_eq!(0.06, game.time_waited);
+        assert_eq!(0.06, game.player_one.time_waited());
     }
 
     #[test]
@@ -185,8 +176,8 @@ mod tests {
         game.key_pressed(Key::D);
         game.key_pressed(Key::Left);
 
-        assert_eq!(Block { x : 5, y : 4 }, game.player_one.next_head_position());
-        assert_eq!(Block { x : 30, y: 19 }, game.player_two.next_head_position())
+        assert_eq!(Block { x: 5, y: 4 }, game.player_one.next_head_position());
+        assert_eq!(Block { x: 30, y: 19 }, game.player_two.next_head_position())
     }
 
     #[test]

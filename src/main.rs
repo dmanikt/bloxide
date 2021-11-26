@@ -4,8 +4,8 @@ mod game;
 mod graphics;
 mod player;
 
-use piston_window::*;
 use crate::game::Game;
+use piston_window::*;
 
 fn main() {
     // The dimensions of the game board, in "block" units.
