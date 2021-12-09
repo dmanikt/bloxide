@@ -113,9 +113,17 @@ impl Player {
     /// Draws the player given a graphics Context and G2d.  A player is drawn by drawing all
     /// of the blocks in its trail.  Note that the type Block has a draw() function, which can
     /// be used here when iterating over the player's trail.
-    pub fn draw(&self, con: &Context, g: &mut G2d) {
+    pub fn draw(&self, con: &Context, g: &mut G2d, ai: bool) {
         for block in &self.trail {
-            block.draw(self.color, con, g);
+            block.draw(
+                if !ai {
+                    self.color
+                } else {
+                    piston_window::color::hex("00ff00")
+                },
+                con,
+                g,
+            );
         }
     }
 

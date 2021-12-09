@@ -5,14 +5,14 @@ use piston_window::{Context, G2d, Key};
 
 /// Determines the time step length in between advancements of each player.
 pub const PLAYER_SPEED: f64 = 0.15;
-/// Whether or not AI is playing for player one
-pub const AI: bool = true;
 
 /// A Game struct holds information related to the size of the game board,
 /// the two players, and the status of the game.
 pub struct Game {
     width: u32,  // Measured in "blocks"
     height: u32, // Measured in "blocks"
+
+    ai: bool, // whether or not the AI is playing for player one
 
     player_one: player::Player,
     player_two: player::Player,
@@ -30,6 +30,8 @@ impl Game {
             width,
             height,
 
+            ai: false,
+
             player_one: Player::player_1(),
             player_two: Player::player_2(width, height),
 
@@ -42,8 +44,8 @@ impl Game {
     /// Draws the game by first drawing both players, and then drawing a black border on the outer
     /// edge of the game window.
     pub fn draw(&self, con: &Context, g: &mut G2d) -> Option<bool> {
-        self.player_one.draw(con, g);
-        self.player_two.draw(con, g);
+        self.player_one.draw(con, g, self.ai);
+        self.player_two.draw(con, g, false);
 
         // draw the border of the game last so that it covers up anything on the border
         draw_rectangle([0., 0., 0., 1.0], 0, 0, self.width, 1, con, g);
@@ -75,7 +77,7 @@ impl Game {
         self.player_two.wait_time(time_elapsed);
 
         if !self.is_game_over {
-            if self.player_one.time_waited() >= PLAYER_SPEED && !AI {
+            if self.player_one.time_waited() >= PLAYER_SPEED && !self.ai {
                 if self.player_one_collision(self.player_one.next_head_position()) {
                     self.is_game_over = true;
                     self.winner = Some(false);
@@ -114,6 +116,8 @@ impl Game {
         }
     }
 
+    /// Updates player 1 to turn away from a wall in a direction that will keep it alive.
+    /// This forces the other player to make a risky move to beat the AI.
     pub fn update_ai_direction(&mut self) {
         if !self.player_one_collision(self.player_one.position_on_turn()) {
             self.player_one.turn(false)
@@ -124,19 +128,37 @@ impl Game {
 
     /// Updates the game based on a key pressed by the user.  The WASD keys will change the
     /// direction of player 1 (do this by calling the update_direction method for player 1).
+    /// However, they will do nothing if player one is currently being controlled by the AI.
     /// The directional arrow keys will update the direction of player 2 (do this by calling the
     /// update_direction method for player 2).  The enter key will restart the game, but only
-    /// if the game is currently over.
+    /// if the game is currently over.  The p key toggles the AI on and off for player 1.
     pub fn key_pressed(&mut self, key: Key) {
         match key {
-            Key::W => self.player_one.update_direction(Some(Direction::Up)),
-            Key::A => self.player_one.update_direction(Some(Direction::Left)),
-            Key::S => self.player_one.update_direction(Some(Direction::Down)),
-            Key::D => self.player_one.update_direction(Some(Direction::Right)),
+            Key::W => {
+                if !self.ai {
+                    self.player_one.update_direction(Some(Direction::Up))
+                }
+            }
+            Key::A => {
+                if !self.ai {
+                    self.player_one.update_direction(Some(Direction::Left))
+                }
+            }
+            Key::S => {
+                if !self.ai {
+                    self.player_one.update_direction(Some(Direction::Down))
+                }
+            }
+            Key::D => {
+                if !self.ai {
+                    self.player_one.update_direction(Some(Direction::Right))
+                }
+            }
             Key::Up => self.player_two.update_direction(Some(Direction::Up)),
             Key::Down => self.player_two.update_direction(Some(Direction::Down)),
             Key::Left => self.player_two.update_direction(Some(Direction::Left)),
             Key::Right => self.player_two.update_direction(Some(Direction::Right)),
+            Key::P => self.ai = !self.ai,
             Key::Return => {
                 if self.is_game_over {
                     self.restart();
@@ -155,6 +177,7 @@ impl Game {
         self.winner = None;
 
         self.is_game_over = false;
+        self.ai = false;
     }
 
     /// Checks if the given Block (i.e., a location) is out of the bounds of the gameboard.
