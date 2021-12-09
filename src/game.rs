@@ -85,7 +85,6 @@ impl Game {
                     self.player_one.wait_time(-PLAYER_SPEED);
                 }
             }
-
             // if AI enabled
             else if self.player_one.time_waited() >= PLAYER_SPEED {
                 // if about to crash, turn
@@ -103,7 +102,7 @@ impl Game {
             }
 
             if self.player_two.time_waited() >= PLAYER_SPEED {
-                if self.player_two_collision(self.player_one.next_head_position()) {
+                if self.player_two_collision() {
                     self.is_game_over = true;
                     self.winner = Some(true);
                 } else {
@@ -115,17 +114,10 @@ impl Game {
         }
     }
 
-    // checks which direction is free given current direction
-    // simulates each direction
-    pub fn free_dirs(&mut self, current: Direction) {
-        //if self.is_out_of_bounds(self.player_one.next_head_position())
-    }
-
     pub fn update_ai_direction(&mut self) {
         if !self.player_one_collision(self.player_one.position_on_turn()) {
             self.player_one.turn(false)
-        }
-        else if !self.player_one_collision(self.player_one.position_on_cc()) {
+        } else if !self.player_one_collision(self.player_one.position_on_cc()) {
             self.player_one.turn(true);
         }
     }
@@ -171,19 +163,19 @@ impl Game {
         block.x == 0 || block.x >= (self.width - 1) || block.y == 0 || block.y >= (self.height - 1)
     }
 
-    // Checks if player one will be facing a collision in its next movement by
-    // 1. if the player is out of bounds
-    // 2. if the player crashes into itself
-    // 3. if the player crashes into the other snake
+    /// Checks if player one will be facing a collision in its next movement by
+    /// 1. if the player is out of bounds
+    /// 2. if the player crashes into itself
+    /// 3. if the player crashes into the other snake
     fn player_one_collision(&mut self, position: Block) -> bool {
-        self.is_out_of_bounds(position) 
+        self.is_out_of_bounds(position)
             || self.player_one.imminent_self_collision()
             || self.player_two.trail_covers_location(position)
     }
 
-    // Checks if player two will be facing a collision in its next movement
-    fn player_two_collision(&mut self, position: Block) -> bool {
-        self.is_out_of_bounds(self.player_two.next_head_position()) 
+    /// Checks if player two will be facing a collision in its next movement
+    fn player_two_collision(&mut self) -> bool {
+        self.is_out_of_bounds(self.player_two.next_head_position())
             || self.player_two.imminent_self_collision()
             || self
                 .player_one
