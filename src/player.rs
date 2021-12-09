@@ -179,6 +179,80 @@ impl Player {
         }
     }
 
+    /// Updates ai's moving direction by turning clockwise or counterclockwise.  If the parameter
+    /// is true, turns counterclockwise.  Else it turns clockwise.
+    pub fn turn(&mut self, cc: bool) {
+        if cc {
+            self.update_direction(match self.moving_direction {
+                Direction::Right => Some(Direction::Up),
+                Direction::Left => Some(Direction::Down),
+                Direction::Up => Some(Direction::Left),
+                Direction::Down => Some(Direction::Right),
+            });
+        } else {
+            self.update_direction(match self.moving_direction {
+                Direction::Right => Some(Direction::Down),
+                Direction::Left => Some(Direction::Up),
+                Direction::Up => Some(Direction::Right),
+                Direction::Down => Some(Direction::Left),
+            });
+        }
+    }
+
+    /// Returns the position that the head of the player would be in if it made a clockwise
+    /// turn.
+    pub fn position_on_turn(&self) -> Block {
+        let &Block {
+            x: head_x,
+            y: head_y,
+        } = self.trail.front().unwrap();
+        match self.moving_direction {
+            Direction::Up => Block {
+                x: head_x + 1,
+                y: head_y,
+            },
+            Direction::Down => Block {
+                x: head_x - 1,
+                y: head_y,
+            },
+            Direction::Left => Block {
+                x: head_x,
+                y: head_y - 1,
+            },
+            Direction::Right => Block {
+                x: head_x,
+                y: head_y + 1,
+            },
+        }
+    }
+
+    /// Returns the position that the head would be in if the player made a
+    /// counterclockwise turn.
+    pub fn position_on_cc(&self) -> Block {
+        let &Block {
+            x: head_x,
+            y: head_y,
+        } = self.trail.front().unwrap();
+        match self.moving_direction {
+            Direction::Up => Block {
+                x: head_x - 1,
+                y: head_y,
+            },
+            Direction::Down => Block {
+                x: head_x + 1,
+                y: head_y,
+            },
+            Direction::Left => Block {
+                x: head_x,
+                y: head_y + 1,
+            },
+            Direction::Right => Block {
+                x: head_x,
+                y: head_y - 1,
+            },
+        }
+    }
+
     /// Checks if the specified location is covered by the player's trail.
     pub fn trail_covers_location(&self, location: Block) -> bool {
         self.trail.contains(&location)
