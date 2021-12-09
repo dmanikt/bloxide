@@ -4,7 +4,7 @@ use crate::player::{Direction, Player};
 use piston_window::{Context, G2d, Key};
 
 /// Determines the time step length in between advancements of each player.
-pub const PLAYER_SPEED: f64 = 0.15;
+pub const PLAYER_SPEED: f64 = 0.10;
 
 /// A Game struct holds information related to the size of the game board,
 /// the two players, and the status of the game.
