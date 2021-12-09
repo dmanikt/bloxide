@@ -43,7 +43,7 @@ impl Game {
 
     /// Draws the game by first drawing both players, and then drawing a black border on the outer
     /// edge of the game window.
-    pub fn draw(&self, con: &Context, g: &mut G2d) -> Option<bool> {
+    pub fn draw(&self, con: &Context, g: &mut G2d) -> (Option<bool>, bool) {
         self.player_one.draw(con, g, self.ai);
         self.player_two.draw(con, g, false);
 
@@ -53,7 +53,7 @@ impl Game {
         draw_rectangle([0., 0., 0., 1.0], 0, self.height - 1, self.width, 1, con, g);
         draw_rectangle([0., 0., 0., 1.0], self.width - 1, 0, 1, self.height, con, g);
 
-        self.winner
+        (self.winner, self.ai)
     }
 
     /// Returns the height of the game (in blocks)

@@ -49,12 +49,12 @@ fn main() {
 
         window.draw_2d(&event, |c, g, dev| {
             clear(graphics::BACK_COLOR, g);
-            let winner = game.draw(&c, g);
+            let (winner, ai) = game.draw(&c, g);
 
             // if the game is over, call a function that draws the appropriate
             // game-over message.
             if let Some(player) = winner {
-                game_over_screen(&game, player, &c, g, dev, &mut glyphs)
+                game_over_screen(&game, player, ai, &c, g, dev, &mut glyphs)
             }
         });
 
@@ -70,12 +70,15 @@ fn main() {
 fn game_over_screen(
     game: &Game,
     winner: bool,
+    ai: bool,
     con: &Context,
     g: &mut G2d,
     dev: &mut Device,
     glyphs: &mut GlyphCache<TextureContext<Factory, Resources, CommandBuffer>, Texture<Resources>>,
 ) {
-    let main_color = if winner {
+    let main_color = if winner && ai {
+        [0., 1.0, 0., 0.15]
+    } else if winner {
         [1.0, 0., 0., 0.15]
     } else {
         [0., 0., 1.0, 0.15]
@@ -90,13 +93,17 @@ fn game_over_screen(
         g,
     );
 
-    let game_over_msg = if winner {
+    let game_over_msg = if winner && ai {
+        "Green Player Wins!"
+    } else if winner {
         "Red Player Wins!"
     } else {
         "Blue Player Wins!"
     };
 
-    let (trans_x, trans_y) = if winner {
+    let (trans_x, trans_y) = if winner && ai {
+        (140.0, 300.0)
+    } else if winner {
         (170.0, 300.0)
     } else {
         (155.0, 300.0)
