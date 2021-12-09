@@ -5,6 +5,8 @@ use piston_window::{Context, G2d, Key};
 
 /// Determines the time step length in between advancements of each player.
 pub const PLAYER_SPEED: f64 = 0.15;
+/// Whether or not AI is playing for player one
+pub const AI: bool = true;
 
 /// A Game struct holds information related to the size of the game board,
 /// the two players, and the status of the game.
@@ -73,13 +75,8 @@ impl Game {
         self.player_two.wait_time(time_elapsed);
 
         if !self.is_game_over {
-            if self.player_one.time_waited() >= PLAYER_SPEED {
-                if self.is_out_of_bounds(self.player_one.next_head_position())
-                    || self.player_one.imminent_self_collision()
-                    || self
-                        .player_two
-                        .trail_covers_location(self.player_one.next_head_position())
-                {
+            if self.player_one.time_waited() >= PLAYER_SPEED && !AI {
+                if self.player_one_collision(self.player_one.next_head_position()) {
                     self.is_game_over = true;
                     self.winner = Some(false);
                 } else {
@@ -88,13 +85,25 @@ impl Game {
                     self.player_one.wait_time(-PLAYER_SPEED);
                 }
             }
+
+            // if AI enabled
+            else if self.player_one.time_waited() >= PLAYER_SPEED {
+                // if about to crash, turn
+                if self.player_one_collision(self.player_one.next_head_position()) {
+                    self.update_ai_direction();
+                    if self.player_one_collision(self.player_one.next_head_position()) {
+                        self.is_game_over = true;
+                        self.winner = Some(false);
+                    }
+                } else {
+                    self.player_one.move_forward();
+                    self.player_one.advance_direction_queue();
+                    self.player_one.wait_time(-PLAYER_SPEED);
+                }
+            }
+
             if self.player_two.time_waited() >= PLAYER_SPEED {
-                if self.is_out_of_bounds(self.player_two.next_head_position())
-                    || self.player_two.imminent_self_collision()
-                    || self
-                        .player_one
-                        .trail_covers_location(self.player_two.next_head_position())
-                {
+                if self.player_two_collision(self.player_one.next_head_position()) {
                     self.is_game_over = true;
                     self.winner = Some(true);
                 } else {
@@ -103,6 +112,21 @@ impl Game {
                     self.player_two.wait_time(-PLAYER_SPEED);
                 }
             }
+        }
+    }
+
+    // checks which direction is free given current direction
+    // simulates each direction
+    pub fn free_dirs(&mut self, current: Direction) {
+        //if self.is_out_of_bounds(self.player_one.next_head_position())
+    }
+
+    pub fn update_ai_direction(&mut self) {
+        if !self.player_one_collision(self.player_one.position_on_turn()) {
+            self.player_one.turn(false)
+        }
+        else if !self.player_one_collision(self.player_one.position_on_cc()) {
+            self.player_one.turn(true);
         }
     }
 
@@ -145,6 +169,25 @@ impl Game {
     /// This will be used when determining if a snake has run out of bounds (i.e., died)
     fn is_out_of_bounds(&self, block: Block) -> bool {
         block.x == 0 || block.x >= (self.width - 1) || block.y == 0 || block.y >= (self.height - 1)
+    }
+
+    // Checks if player one will be facing a collision in its next movement by
+    // 1. if the player is out of bounds
+    // 2. if the player crashes into itself
+    // 3. if the player crashes into the other snake
+    fn player_one_collision(&mut self, position: Block) -> bool {
+        self.is_out_of_bounds(position) 
+            || self.player_one.imminent_self_collision()
+            || self.player_two.trail_covers_location(position)
+    }
+
+    // Checks if player two will be facing a collision in its next movement
+    fn player_two_collision(&mut self, position: Block) -> bool {
+        self.is_out_of_bounds(self.player_two.next_head_position()) 
+            || self.player_two.imminent_self_collision()
+            || self
+                .player_one
+                .trail_covers_location(self.player_two.next_head_position())
     }
 }
 
